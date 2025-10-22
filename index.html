@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Asphalt Legends — Database</title>
+    <style>
+        :root{
+            --bg:#0b1020;
+            --card:#0f1724;
+            --muted:#9aa7c7;
+            --accent:#00d1ff;
+            --glass: rgba(255,255,255,0.04);
+            --glass-2: rgba(255,255,255,0.02);
+            --success: #6ef07a;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+        html,body{height:100%;margin:0;background:
+            radial-gradient(1000px 600px at 10% 10%, rgba(0,209,255,0.06), transparent 8%),
+            radial-gradient(800px 500px at 90% 90%, rgba(0,209,255,0.03), transparent 8%),
+            var(--bg);
+            color:#e6eef8;
+            -webkit-font-smoothing:antialiased;}
+        header{display:flex;gap:16px;align-items:center;padding:20px 28px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);backdrop-filter: blur(6px);}
+        h1{font-size:20px;margin:0;letter-spacing:0.6px}
+        .brand{display:flex;align-items:center;gap:12px}
+        .logo{
+            width:44px;height:44px;border-radius:10px;
+            background:linear-gradient(135deg,var(--accent),#6a00ff);
+            display:flex;align-items:center;justify-content:center;font-weight:700;color:#02121a;
+            box-shadow:0 6px 18px rgba(0,0,0,0.6), inset 0 -6px 18px rgba(255,255,255,0.06);
+        }
+        main{display:grid;grid-template-columns:320px 1fr;padding:28px;gap:24px;}
+        /* Sidebar */
+        .sidebar{background:linear-gradient(180deg,var(--glass),transparent);border-radius:14px;padding:18px;min-height:460px}
+        .search{display:flex;gap:8px}
+        .search input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+        .filters{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+        .chips{display:flex;flex-wrap:wrap;gap:8px}
+        .chip{padding:8px 10px;border-radius:999px;background:var(--glass-2);cursor:pointer;border:1px solid rgba(255,255,255,0.02);font-size:13px}
+        .chip.active{background:linear-gradient(90deg,rgba(0,209,255,0.14),rgba(106,0,255,0.12));border-color:rgba(0,209,255,0.2);color:var(--accent)}
+        select,input[type="range"]{width:100%;background:transparent;color:inherit;border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.04)}
+        .stats{display:flex;gap:8px;flex-direction:column;margin-top:12px}
+        .stat-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+        /* Content */
+        .controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+        .card{background:linear-gradient(180deg,var(--card),#071226);padding:14px;border-radius:12px;position:relative;border:1px solid rgba(255,255,255,0.03);overflow:hidden;cursor:pointer;transition:transform .18s}
+        .card:hover{transform:translateY(-6px)}
+        .car-image{height:110px;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));display:flex;align-items:end;padding:12px}
+        .car-title{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+        .title-left{font-weight:700}
+        .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+        .specs{display:flex;gap:8px;margin-top:10px}
+        .spec{font-size:12px;background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;color:var(--muted)}
+        .fav{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,0.03);display:grid;place-items:center}
+        .fav.active{background:linear-gradient(90deg,#ff7aa2,#ffb86b);color:#081018}
+        /* Modal */
+        .overlay{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+        .overlay.open{display:flex}
+        .modal{max-width:980px;width:100%;background:linear-gradient(180deg,#071025, #0b1726);border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,0.04)}
+        .modal-grid{display:grid;grid-template-columns:320px 1fr;gap:16px}
+        .progress{height:10px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden}
+        .progress > i{display:block;height:100%}
+        footer{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+        /* Responsive */
+        @media (max-width:900px){
+            main{grid-template-columns:1fr;padding:16px}
+            .sidebar{order:2}
+            .modal-grid{grid-template-columns:1fr}
+            .car-image{height:84px}
+        }
+        /* small helpers */
+        .small{font-size:13px;color:var(--muted)}
+        button{background:transparent;color:inherit;border:0;padding:8px;border-radius:8px;cursor:pointer}
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo" aria-hidden>AL</div>
+            <div>
+                <h1>Asphalt Legends — Database</h1>
+                <div class="small">Smooth, fast, filterable index of vehicles, tracks and builds</div>
+            </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <div class="small">Local demo • Responsive • Keyboard friendly</div>
+        </div>
+    </header>
+
+    <main>
+        <aside class="sidebar" aria-label="Filters">
+            <div class="search" role="search">
+                <input id="q" placeholder="Search cars, tracks, manufacturers..." aria-label="Search" />
+                <button id="clear" title="Clear">✕</button>
+            </div>
+
+            <div class="filters">
+                <label class="small">Class</label>
+                <div class="chips" id="class-chips" role="listbox" aria-label="Car classes"></div>
+
+                <label class="small">Vehicle type</label>
+                <div class="chips" id="type-chips"></div>
+
+                <label class="small">Min top speed</label>
+                <input id="speed" type="range" min="150" max="450" step="5" value="150" />
+
+                <label class="small">Sort</label>
+                <select id="sort">
+                    <option value="relevance">Relevance</option>
+                    <option value="speed">Top speed</option>
+                    <option value="accel">Acceleration</option>
+                    <option value="handling">Handling</option>
+                    <option value="year">Year</option>
+                </select>
+
+                <div class="stats">
+                    <div class="stat-row"><span>Results</span><strong id="count">0</strong></div>
+                    <div class="stat-row"><span>Favorites</span><strong id="favcount">0</strong></div>
+                </div>
+
+                <div style="margin-top:auto">
+                    <button id="export">Export visible CSV</button>
+                    <button id="reset">Reset filters</button>
+                </div>
+            </div>
+        </aside>
+
+        <section>
+            <div class="controls">
+                <div class="small" id="hint">Click a card to open details · Press "/" to focus search</div>
+                <div style="display:flex;gap:8px">
+                    <button id="shuffle" title="Shuffle view">Shuffle</button>
+                    <button id="view-favs" title="Show favorites">Favorites</button>
+                </div>
+            </div>
+
+            <div class="grid" id="grid" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal" role="document">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+                <div>
+                    <h2 id="modal-title" style="margin:0">Vehicle</h2>
+                    <div class="small" id="modal-sub">Manufacturer • Class • Year</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button id="modal-fav">☆ Favorite</button>
+                    <button id="modal-close">Close ✕</button>
+                </div>
+            </div>
+
+            <div class="modal-grid">
+                <div style="background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:10px;padding:12px">
+                    <div id="modal-image" style="height:220px;border-radius:10px;display:flex;align-items:end;padding:12px"></div>
+                    <div class="small" style="margin-top:8px" id="modal-desc"></div>
+                </div>
+                <div>
+                    <h3 style="margin-top:0">Stats</h3>
+                    <div style="display:grid;gap:8px" id="stats-list"></div>
+                    <h3 style="margin-top:12px">Details</h3>
+                    <div class="small" id="modal-details"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>Built for demo — replace dataset with complete game data for production</footer>
+
+    <script>
+        // Minimal, focused single-file app.
+        // Sample dataset. Replace or fetch a full database for a complete site.
+        const DATA = [
+            {id:1, name:"Fury Raptor X", manuf:"Vollante", class:"S", type:"Car", year:2024, speed:398, accel:2.1, handling:89, description:"A top-tier hypercar tuned for top speed runs and drift-friendly setups.", tags:["hyper","speed"]},
+            {id:2, name:"Nebula GT", manuf:"Aethon", class:"A", type:"Car", year:2022, speed:345, accel:2.9, handling:84, description:"Balanced GT with excellent cornering and mid-range grunt.", tags:["gt","allround"]},
+            {id:3, name:"Storm V2", manuf:"Kaisen", class:"S", type:"Bike", year:2023, speed:420, accel:1.9, handling:78, description:"Extreme superbike built for short tracks and nitro bursts.", tags:["bike","nitro"]},
+            {id:4, name:"Atlas RX", manuf:"Granio", class:"B", type:"Car", year:2020, speed:312, accel:3.6, handling:72, description:"Sturdy off-road capable racer with surprising agility.", tags:["offroad","utility"]},
+            {id:5, name:"Pulse EVO", manuf:"Zenith", class:"A", type:"Car", year:2021, speed:330, accel:3.2, handling:86, description:"Modern sportscar with an engaging drive and solid handling.", tags:["sport","handling"]},
+            {id:6, name:"Shadow Phantom", manuf:"Vollante", class:"S", type:"Car", year:2023, speed:405, accel:2.0, handling:91, description:"Elite tuning legend: low drag, impeccable control at high speed.", tags:["legend","speed"]},
+            {id:7, name:"Glide SR", manuf:"Aethon", class:"C", type:"Car", year:2018, speed:280, accel:4.3, handling:66, description:"Beginner friendly with straightforward upgrades and reliability.", tags:["starter"]},
+            {id:8, name:"Tornado ZX", manuf:"Kaisen", class:"S", type:"Car", year:2024, speed:412, accel:1.95, handling:88, description:"Latest S-class marvel combining acceleration and top speed.", tags:["new","sclass"]}
+        ];
+
+        // State
+        let state = {
+            q: '',
+            class: null,
+            type: null,
+            minSpeed: 150,
+            sort: 'relevance',
+            showFavs:false,
+            favorites: new Set(JSON.parse(localStorage.getItem('asphalt:favs')||'[]'))
+        };
+
+        // UI refs
+        const grid = document.getElementById('grid');
+        const qInput = document.getElementById('q');
+        const clearBtn = document.getElementById('clear');
+        const classChips = document.getElementById('class-chips');
+        const typeChips = document.getElementById('type-chips');
+        const speedRange = document.getElementById('speed');
+        const sortSel = document.getElementById('sort');
+        const countEl = document.getElementById('count');
+        const favCountEl = document.getElementById('favcount');
+        const overlay = document.getElementById('overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalSub = document.getElementById('modal-sub');
+        const modalImage = document.getElementById('modal-image');
+        const modalDesc = document.getElementById('modal-desc');
+        const statsList = document.getElementById('stats-list');
+        const modalDetails = document.getElementById('modal-details');
+        const modalClose = document.getElementById('modal-close');
+        const modalFavBtn = document.getElementById('modal-fav');
+        const exportBtn = document.getElementById('export');
+        const resetBtn = document.getElementById('reset');
+        const shuffleBtn = document.getElementById('shuffle');
+        const viewFavsBtn = document.getElementById('view-favs');
+
+        // derive lists
+        const classes = Array.from(new Set(DATA.map(d=>d.class))).sort();
+        const types = Array.from(new Set(DATA.map(d=>d.type))).sort();
+
+        function createChip(text, container, onClick) {
+            const el = document.createElement('button');
+            el.className = 'chip';
+            el.textContent = text;
+            el.addEventListener('click', onClick);
+            container.appendChild(el);
+            return el;
+        }
+
+        // populate filter chips
+        classes.forEach(c=>createChip(c, classChips, e=>{
+            state.class = state.class===c?null:c;
+            updateChips();
+            render();
+        }));
+        types.forEach(t=>createChip(t, typeChips, e=>{
+            state.type = state.type===t?null:t;
+            updateChips();
+            render();
+        }));
+
+        function updateChips(){
+            [...classChips.children].forEach(node=>node.classList.toggle('active', node.textContent===state.class));
+            [...typeChips.children].forEach(node=>node.classList.toggle('active', node.textContent===state.type));
+        }
+
+        // UI events
+        qInput.addEventListener('input', e => { state.q = e.target.value.trim(); render(); });
+        clearBtn.addEventListener('click', () => { qInput.value=''; state.q=''; render(); });
+        speedRange.addEventListener('input', e=>{ state.minSpeed = Number(e.target.value); render(); });
+        sortSel.addEventListener('change', e=>{ state.sort = e.target.value; render(); });
+        resetBtn.addEventListener('click', ()=>{ state = {...state, q:'', class:null, type:null, minSpeed:150, sort:'relevance', showFavs:false}; qInput.value=''; speedRange.value=150; updateChips(); render(); });
+        exportBtn.addEventListener('click', ()=>{ downloadCSV(filtered()); });
+        shuffleBtn.addEventListener('click', ()=>{ shuffleThenRender(); });
+        viewFavsBtn.addEventListener('click', ()=>{ state.showFavs = !state.showFavs; render(); });
+
+        // keyboard shortcuts
+        window.addEventListener('keydown', e=>{
+            if (e.key === '/') { e.preventDefault(); qInput.focus(); }
+            if (e.key === 'f' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); state.showFavs = !state.showFavs; render(); }
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function render(){
+            const items = filtered();
+            grid.innerHTML = '';
+            items.forEach(item => grid.appendChild(cardFor(item)));
+            countEl.textContent = items.length;
+            favCountEl.textContent = state.favorites.size;
+            updateChips();
+        }
+
+        function filtered(){
+            let out = DATA.filter(d=>{
+                if (state.showFavs && !state.favorites.has(String(d.id))) return false;
+                if (state.class && d.class !== state.class) return false;
+                if (state.type && d.type !== state.type) return false;
+                if (d.speed < state.minSpeed) return false;
+                if (state.q){
+                    const q = state.q.toLowerCase();
+                    const hay = [d.name,d.manuf,d.class,d.type, d.description, ...(d.tags||[])].join(' ').toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+            // sort
+            out.sort((a,b)=>{
+                if (state.sort==='relevance') return b.speed - a.speed;
+                if (state.sort==='speed') return b.speed - a.speed;
+                if (state.sort==='accel') return a.accel - b.accel;
+                if (state.sort==='handling') return b.handling - a.handling;
+                if (state.sort==='year') return b.year - a.year;
+                return 0;
+            });
+            return out;
+        }
+
+        function cardFor(d){
+            const el = document.createElement('article');
+            el.className = 'card';
+            el.tabIndex = 0;
+            el.setAttribute('aria-label', `${d.name} — ${d.manuf} — ${d.class}`);
+            el.innerHTML = `
+                <div class="fav ${state.favorites.has(String(d.id)) ? 'active' : ''}" data-id="${d.id}" title="Toggle favorite">
+                    ${state.favorites.has(String(d.id)) ? '★' : '☆'}
+                </div>
+                <div class="car-image">${carSVG(d)}</div>
+                <div class="car-title">
+                    <div>
+                        <div class="title-left">${d.name}</div>
+                        <div class="subtitle">${d.manuf} • ${d.class} • ${d.year}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="small">${d.type}</div>
+                        <div style="font-weight:800;margin-top:6px">${d.speed} km/h</div>
+                    </div>
+                </div>
+                <div class="specs">
+                    <div class="spec">Accel ${d.accel}s</div>
+                    <div class="spec">Handling ${d.handling}</div>
+                    <div class="spec">${(d.tags||[])[0]||''}</div>
+                </div>
+            `;
+            el.querySelector('.fav').addEventListener('click', e=>{
+                e.stopPropagation();
+                toggleFav(String(d.id));
+                el.querySelector('.fav').classList.toggle('active', state.favorites.has(String(d.id)));
+                el.querySelector('.fav').textContent = state.favorites.has(String(d.id)) ? '★' : '☆';
+            });
+            el.addEventListener('click', ()=>openModal(d));
+            el.addEventListener('keydown', e=>{ if(e.key==='Enter') openModal(d); });
+            return el;
+        }
+
+        function carSVG(d){
+            // simple stylized silhouette with gradient varies by class and tags
+            const hue = (d.class==='S')?200 : (d.class==='A')?180 : (d.class==='B')?150 : 220;
+            const grad = `linear-gradient(90deg,hsl(${hue} 100% 60%), hsl(${(hue+40)%360} 90% 50%))`;
+            return `<div style="width:100%;height:100%;display:flex;align-items:flex-end;justify-content:flex-start">
+                <svg width="200" height="96" viewBox="0 0 200 96" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex:1">
+                    <defs>
+                        <linearGradient id="g${d.id}" x1="0" x2="1"><stop offset="0" stop-color="rgba(0,209,255,0.18)"/><stop offset="1" stop-color="rgba(106,0,255,0.18)"/></linearGradient>
+                    </defs>
+                    <path d="M6 60 L28 46 L44 36 L80 34 L120 30 L150 36 L172 46 L194 60 L194 76 L172 80 L150 82 L128 78 L100 78 L72 82 L48 80 L26 76 L6 76 Z" fill="url(#g${d.id})" opacity="0.9"/>
+                    <circle cx="50" cy="76" r="8" fill="#0b1320" />
+                    <circle cx="150" cy="76" r="8" fill="#0b1320" />
+                </svg>
+            </div>`;
+        }
+
+        function openModal(d){
+            overlay.classList.add('open');
+            overlay.setAttribute('aria-hidden','false');
+            modalTitle.textContent = d.name;
+            modalSub.textContent = `${d.manuf} • ${d.class} • ${d.year} • ${d.type}`;
+            modalImage.innerHTML = carSVG(d);
+            modalDesc.textContent = d.description;
+            statsList.innerHTML = '';
+            addStat('Top speed', d.speed, 500);
+            addStat('Acceleration (0-100)', Math.max(0, 6 - d.accel), 6);
+            addStat('Handling', d.handling, 100);
+            modalDetails.innerHTML = `
+                <div>Tags: ${(d.tags||[]).join(', ')}</div>
+                <div style="margin-top:6px">ID: ${d.id}</div>
+            `;
+            modalFavBtn.textContent = state.favorites.has(String(d.id)) ? '★ Favorited' : '☆ Favorite';
+            modalFavBtn.onclick = ()=>{ toggleFav(String(d.id)); modalFavBtn.textContent = state.favorites.has(String(d.id)) ? '★ Favorited' : '☆ Favorite'; render(); };
+            modalClose.focus();
+        }
+
+        function addStat(name, value, max){
+            const row = document.createElement('div');
+            row.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="small">${name}</div><div class="small">${value}${name.includes('Accel')? '':' '}</div></div>
+            <div class="progress" aria-hidden><i style="width:${Math.min(100,Math.max(0,(value/max)*100))}%;background:linear-gradient(90deg,var(--accent),#6a00ff)"></i></div>`;
+            statsList.appendChild(row);
+        }
+
+        function closeModal(){
+            overlay.classList.remove('open');
+            overlay.setAttribute('aria-hidden','true');
+        }
+        modalClose.addEventListener('click', closeModal);
+        overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+
+        function toggleFav(id){
+            if(state.favorites.has(id)) state.favorites.delete(id); else state.favorites.add(id);
+            localStorage.setItem('asphalt:favs', JSON.stringify(Array.from(state.favorites)));
+            favCountEl.textContent = state.favorites.size;
+            render();
+        }
+
+        function downloadCSV(items){
+            const rows = [['id','name','manufacturer','class','type','year','speed','accel','handling','tags']];
+            items.forEach(d=>rows.push([d.id,d.name,d.manuf,d.class,d.type,d.year,d.speed,d.accel,d.handling,(d.tags||[]).join('|')]));
+            const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], {type:'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'asphalt-visible.csv'; document.body.appendChild(a); a.click();
+            URL.revokeObjectURL(url); a.remove();
+        }
+
+        function shuffleThenRender(){
+            DATA.sort(()=>Math.random()-0.5);
+            render();
+        }
+
+        // initial render
+        render();
+
+        // small accessibility: announce count changes to screen readers
+        let lastCount = 0;
+        setInterval(()=>{ if (countEl.textContent != lastCount){ lastCount = countEl.textContent; document.title = `${lastCount} results — Asphalt Legends`; } }, 800);
+
+    </script>
+</body>
+</html></div>
